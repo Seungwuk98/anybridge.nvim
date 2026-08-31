@@ -87,6 +87,8 @@ end
 function M.close_float()
   if float_win and vim.api.nvim_win_is_valid(float_win) then
     local win = float_win
+    float_win = nil
+    
     local current_win = vim.api.nvim_get_current_win()
     if win == current_win then
       for _, w in ipairs(vim.api.nvim_list_wins()) do
@@ -97,15 +99,18 @@ function M.close_float()
       end
     end
     vim.api.nvim_win_close(win, true)
+  else
+    -- Window not valid, just clear state
+    float_win = nil
   end
-  -- Clear window state but keep buffer (terminal keeps running)
-  float_win = nil
 end
 
 --- Kill the terminal and close the window
 function M.kill_float()
   local win = float_win
   local buf = float_buf
+  float_win = nil
+  float_buf = nil
   
   if win and vim.api.nvim_win_is_valid(win) then
     local current_win = vim.api.nvim_get_current_win()
@@ -129,10 +134,6 @@ function M.kill_float()
     -- Delete the buffer
     pcall(vim.api.nvim_buf_delete, buf, { force = true })
   end
-  
-  -- Clear all state
-  float_win = nil
-  float_buf = nil
 end
 
 --- Check if terminal buffer is still running
