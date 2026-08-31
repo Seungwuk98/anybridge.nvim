@@ -23,7 +23,8 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 - `:ABOpen` - Open the AnyBridge floating terminal window
 - `:ABToggle` - Toggle the AnyBridge floating terminal window (hides window, keeps terminal running)
-- `:ABClose` - Close the AnyBridge floating terminal window and terminate the terminal
+- `:ABClose` - Close the AnyBridge floating terminal window (terminal keeps running in background)
+- `:ABKill` - Kill the terminal and close the window
 
 ### Example
 
@@ -67,7 +68,9 @@ require("anybridge").setup({
 ## Features
 
 - **Toggle behavior**: `:ABToggle` hides the window but keeps the terminal running; toggling again restores the same terminal session
-- **Auto-restart**: `:ABClose` terminates the terminal; next `:ABOpen` starts a fresh session
+- **Close behavior**: `:ABClose` closes the window but keeps the terminal running in background
+- **Kill behavior**: `:ABKill` terminates the terminal and closes the window
+- **Auto-restart**: After `:ABKill`, next `:ABOpen` starts a fresh session
 - **Executable check**: Shows installation prompt if `anybridge` is not found in PATH (does not auto-install)
 - **Configurable**: Customize window size, border style, and command
 - **Visual mode support**: Pass selected text to the terminal via heredoc
@@ -101,7 +104,8 @@ PYEOF
 |---------|--------|----------|
 | `:ABOpen` | Opens | Starts new session |
 | `:ABToggle` | Hides/Shows | Keeps running |
-| `:ABClose` | Closes | Terminates |
+| `:ABClose` | Closes | Keeps running (background) |
+| `:ABKill` | Closes | Terminates |
 
 ## Requirements
 

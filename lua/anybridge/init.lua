@@ -32,6 +32,10 @@ function M.setup(opts)
     M.close_float()
   end, { nargs = 0 })
   
+  vim.api.nvim_create_user_command("ABKill", function()
+    M.kill_float()
+  end, { nargs = 0 })
+  
   -- Store config
   M.config = config
 end
@@ -71,6 +75,39 @@ function M.close_float()
   end
 end
 
+--- Kill the terminal and close the window
+function M.kill_float()
+  local win = M.get_float_window()
+  local buf = M.get_float_buf()
+  
+  if win and vim.api.nvim_win_is_valid(win) then
+    local current_win = vim.api.nvim_get_current_win()
+    if win == current_win then
+      for _, w in ipairs(vim.api.nvim_list_wins()) do
+        if w ~= win then
+          vim.api.nvim_set_current_win(w)
+          break
+        end
+      end
+    end
+    vim.api.nvim_win_close(win, true)
+  end
+  
+  -- Kill the terminal job if it exists
+  if buf and vim.api.nvim_buf_is_valid(buf) then
+    local job_id = vim.fn.getbufvar(buf, "job_id")
+    if job_id and job_id ~= 0 then
+      pcall(vim.fn.jobstop, job_id)
+    end
+    -- Delete the buffer
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
+  end
+  
+  -- Clear all state
+  float_win = nil
+  float_buf = nil
+end
+
 --- Check if terminal buffer is still running
 function M.is_terminal_running(buf)
   if not buf or not vim.api.nvim_buf_is_valid(buf) then
@@ -100,15 +137,7 @@ end
 
 --- Close and reopen float window with fresh terminal
 function M.restart_float()
-  -- Close existing window and buffer
-  if float_win and vim.api.nvim_win_is_valid(float_win) then
-    vim.api.nvim_win_close(float_win, true)
-  end
-  if float_buf and vim.api.nvim_buf_is_valid(float_buf) then
-    pcall(vim.api.nvim_buf_delete, float_buf, { force = true })
-  end
-  float_win = nil
-  float_buf = nil
+  M.kill_float()
   M.open_float()
 end
 

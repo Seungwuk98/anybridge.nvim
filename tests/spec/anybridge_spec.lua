@@ -25,9 +25,9 @@ describe("anybridge", function()
     local test_win
     
     before_each(function()
-      -- Close previous anybridge window (terminal keeps running)
+      -- Kill previous anybridge window and buffer (reset module state)
       local anybridge = require("anybridge")
-      anybridge.close_float()
+      anybridge.kill_float()
       
       -- Close previous test window if exists
       if test_win and vim.api.nvim_win_is_valid(test_win) then
@@ -92,7 +92,7 @@ describe("anybridge", function()
       assert.truthy(anybridge.get_float_window())
       
       -- Close it manually for next test
-      anybridge.close_float()
+      anybridge.kill_float()
     end)
     
     it("should preserve terminal buffer when toggling", function()
@@ -119,6 +119,21 @@ describe("anybridge", function()
       -- Window should use the same buffer
       local buf3 = vim.api.nvim_win_get_buf(win)
       eq(buf2, buf3)
+    end)
+    
+    it("should kill terminal and close window with kill_float", function()
+      local anybridge = require("anybridge")
+      anybridge.setup({ command = "echo test" })
+      
+      -- Open and get the buffer
+      anybridge.open_float()
+      local buf1 = anybridge.get_float_buf()
+      assert.truthy(buf1)
+      
+      -- Kill should close window and delete buffer
+      anybridge.kill_float()
+      assert.falsy(anybridge.get_float_window())
+      assert.falsy(anybridge.get_float_buf())
     end)
     
     it("should check if executable exists", function()
