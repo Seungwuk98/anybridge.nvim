@@ -213,6 +213,23 @@ function M.open_float(selected_text)
   -- Start terminal with anybridge command
   local cmd = config.command
   
+  -- Helper function to safely update buffer on exit
+  local function on_exit(job_id, exit_code)
+    if not buf or not vim.api.nvim_buf_is_valid(buf) then
+      return
+    end
+    pcall(function()
+      vim.api.nvim_buf_set_option(buf, "modifiable", true)
+      vim.api.nvim_buf_set_lines(buf, 0, 0, false, {
+        "",
+        "AnyBridge exited with code: " .. exit_code,
+        "Press 'r' to restart or close the window.",
+      })
+      vim.api.nvim_buf_set_option(buf, "modified", false)
+      vim.api.nvim_buf_set_option(buf, "modifiable", false)
+    end)
+  end
+  
   if selected_text and selected_text ~= "" then
     -- Wrap selected text in heredoc and pass to command
     -- Using Python-style heredoc: text = '''\n...\n'''
@@ -221,33 +238,9 @@ function M.open_float(selected_text)
       "python3 << 'PYEOF'\ntext = '''\n%s\n'''\nprint(text)\nPYEOF\n",
       escaped_text
     )
-    vim.fn.termopen(heredoc_cmd, {
-      on_exit = function(job_id, exit_code)
-        -- Terminal exited, show message
-        vim.api.nvim_buf_set_option(buf, "modifiable", true)
-        vim.api.nvim_buf_set_lines(buf, 0, 0, false, {
-          "",
-          "AnyBridge exited with code: " .. exit_code,
-          "Press 'r' to restart or close the window.",
-        })
-        vim.api.nvim_buf_set_option(buf, "modified", false)
-        vim.api.nvim_buf_set_option(buf, "modifiable", false)
-      end,
-    })
+    vim.fn.termopen(heredoc_cmd, { on_exit = on_exit })
   else
-    vim.fn.termopen(cmd, {
-      on_exit = function(job_id, exit_code)
-        -- Terminal exited, show message
-        vim.api.nvim_buf_set_option(buf, "modifiable", true)
-        vim.api.nvim_buf_set_lines(buf, 0, 0, false, {
-          "",
-          "AnyBridge exited with code: " .. exit_code,
-          "Press 'r' to restart or close the window.",
-        })
-        vim.api.nvim_buf_set_option(buf, "modified", false)
-        vim.api.nvim_buf_set_option(buf, "modifiable", false)
-      end,
-    })
+    vim.fn.termopen(cmd, { on_exit = on_exit })
   end
 end
 
