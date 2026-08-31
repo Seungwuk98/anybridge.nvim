@@ -26,10 +26,18 @@ describe("anybridge", function()
       eq("print('hello')", anybridge.prepare_terminal_text("print('hello')"))
     end)
 
-    it("should wrap multiline text as a bracketed paste", function()
+    it("should wrap multiline text as a fenced bracketed paste", function()
       local anybridge = require("anybridge")
       local text = "local value = 1\nprint(value)"
-      eq("\27[200~" .. text .. "\27[201~", anybridge.prepare_terminal_text(text))
+      local code_block = "```\n" .. text .. "\n```"
+      eq("\27[200~" .. code_block .. "\27[201~", anybridge.prepare_terminal_text(text))
+    end)
+
+    it("should not add an empty line before the closing fence", function()
+      local anybridge = require("anybridge")
+      local text = "local value = 1\nprint(value)\n"
+      local code_block = "```\n" .. text .. "```"
+      eq("\27[200~" .. code_block .. "\27[201~", anybridge.prepare_terminal_text(text))
     end)
   end)
 

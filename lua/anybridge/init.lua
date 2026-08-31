@@ -99,7 +99,9 @@ end
 --- treated as one paste operation rather than individual Enter key presses.
 function M.prepare_terminal_text(text)
   if text:find("\n", 1, true) then
-    return "\27[200~" .. text .. "\27[201~"
+    local closing_separator = text:sub(-1) == "\n" and "" or "\n"
+    local code_block = "```\n" .. text .. closing_separator .. "```"
+    return "\27[200~" .. code_block .. "\27[201~"
   end
   return text
 end
