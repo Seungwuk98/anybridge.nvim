@@ -51,7 +51,8 @@ vim.keymap.set("n", "<leader>ab", "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridg
 | `title` | string | `"AnyBridge"` | Title text displayed in the float window |
 | `command` | string | `"anybridge"` | Shell command to run in the terminal |
 | `executable_path` | string or nil | `nil` | Path to anybridge executable (null to search PATH) |
-| `install_command` | string | `"pip install anybridge"` | Command shown to install anybridge if not found |
+| `install_command` | string | `"curl -fsSL https://code.anybridge.ai/install.sh \\| bash"` | Command shown to install anybridge if not found |
+| `keymaps` | table or nil | `nil` | Keymap configuration (see example below) |
 
 ### Example
 
@@ -61,7 +62,31 @@ require("anybridge").setup({
   height_pct = 0.7,          -- 70% of parent window height
   border = "double",         -- Double border style
   command = "anybridge",     -- Command to run
-  install_command = "pip install anybridge",  -- Shown if anybridge not found
+  install_command = "curl -fsSL https://code.anybridge.ai/install.sh | bash",
+  keymaps = {
+    toggle = "<leader>ab",   -- Toggle AnyBridge
+    open = "<leader>aO",     -- Open new session
+    close = "<leader>ac",    -- Close window (keep terminal)
+    kill = "<leader>ax",     -- Kill terminal and close
+  },
+})
+```
+
+To disable all keymaps (default):
+
+```lua
+require("anybridge").setup({
+  -- keymaps defaults to nil, no keybindings registered
+})
+```
+
+To disable specific keymaps:
+
+```lua
+require("anybridge").setup({
+  keymaps = {
+    toggle = false,  -- Disable toggle keymap
+  },
 })
 ```
 
@@ -71,6 +96,7 @@ require("anybridge").setup({
 - **Close behavior**: `:ABClose` closes the window but keeps the terminal running in background
 - **Kill behavior**: `:ABKill` terminates the terminal and closes the window
 - **Auto-restart**: After `:ABKill`, next `:ABOpen` starts a fresh session
+- **Configurable keymaps**: Set custom keybindings in setup (disabled by default)
 - **Executable check**: Shows installation prompt if `anybridge` is not found in PATH (does not auto-install)
 - **Configurable**: Customize window size, border style, and command
 - **Visual mode support**: Pass selected text to the terminal via heredoc

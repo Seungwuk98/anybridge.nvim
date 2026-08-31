@@ -21,6 +21,9 @@ local defaults = {
 
 	-- Installation command (if executable not found)
 	install_command = "curl -fsSL https://code.anybridge.ai/install.sh | bash",
+
+	-- Keymaps (set to false to disable specific ones, or nil to disable all)
+	keymaps = nil,
 }
 
 local M = {}
