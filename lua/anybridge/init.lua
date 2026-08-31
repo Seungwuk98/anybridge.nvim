@@ -3,7 +3,7 @@ local M = {}
 
 local options = require("anybridge.options")
 
--- Module state: store float window ID
+-- Module state: store float window ID and buffer
 local float_win = nil
 local float_buf = nil
 
@@ -50,7 +50,6 @@ function M.get_float_buf()
   if float_buf and vim.api.nvim_buf_is_valid(float_buf) then
     return float_buf
   end
-  float_buf = nil
   return nil
 end
 
@@ -67,9 +66,8 @@ function M.close_float()
       end
     end
     vim.api.nvim_win_close(win, true)
-    -- Clear state
+    -- Clear window state but keep buffer (terminal keeps running)
     float_win = nil
-    float_buf = nil
   end
 end
 
@@ -102,9 +100,12 @@ end
 
 --- Close and reopen float window with fresh terminal
 function M.restart_float()
-  local win = M.get_float_window()
-  if win and vim.api.nvim_win_is_valid(win) then
-    vim.api.nvim_win_close(win, true)
+  -- Close existing window and buffer
+  if float_win and vim.api.nvim_win_is_valid(float_win) then
+    vim.api.nvim_win_close(float_win, true)
+  end
+  if float_buf and vim.api.nvim_buf_is_valid(float_buf) then
+    pcall(vim.api.nvim_buf_delete, float_buf, { force = true })
   end
   float_win = nil
   float_buf = nil
@@ -115,11 +116,18 @@ function M.toggle_float()
   local win = M.get_float_window()
   
   if win and vim.api.nvim_win_is_valid(win) then
-    -- Window exists, close it
+    -- Window exists, close it (terminal keeps running)
     M.close_float()
   else
-    -- No window, open new one
-    M.open_float()
+    -- No window, check if we have an existing buffer
+    local buf = M.get_float_buf()
+    if buf and vim.api.nvim_buf_is_valid(buf) then
+      -- Reuse existing terminal buffer
+      M.open_float_with_buffer(buf)
+    else
+      -- No existing buffer, create new one
+      M.open_float()
+    end
   end
 end
 
@@ -151,9 +159,42 @@ end
 
 --- Escape text for heredoc
 local function escape_heredoc(text)
-  -- Text in heredoc with 'EOF' delimiter doesn't need escaping
-  -- But we should handle special characters carefully
   return text
+end
+
+--- Helper function to create window with existing buffer
+function M.open_float_with_buffer(buf)
+  local config = M.config or options.get({})
+  
+  -- Get current window dimensions
+  local current_win = vim.api.nvim_get_current_win()
+  local win_width = vim.api.nvim_win_get_width(current_win)
+  local win_height = vim.api.nvim_win_get_height(current_win)
+  
+  -- Calculate float window dimensions using config
+  local width = math.floor(win_width * config.width_pct)
+  local height = math.floor(win_height * config.height_pct)
+  
+  -- Calculate centered position
+  local row = math.floor((win_height - height) / 2)
+  local col = math.floor((win_width - width) / 2)
+  
+  -- Create floating window with existing buffer
+  local win_opts = {
+    relative = "win",
+    win = current_win,
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = config.style,
+    border = config.border,
+  }
+  
+  local win = vim.api.nvim_open_win(buf, true, win_opts)
+  
+  -- Store window ID in module state (buffer already exists)
+  float_win = win
 end
 
 function M.open_float(selected_text)
@@ -201,7 +242,7 @@ function M.open_float(selected_text)
   
   -- Set buffer options
   vim.api.nvim_buf_set_option(buf, "filetype", "anybridge")
-  vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+  vim.api.nvim_buf_set_option(buf, "bufhidden", "hide")
   
   -- Start terminal with anybridge command
   local cmd = config.command
@@ -225,7 +266,6 @@ function M.open_float(selected_text)
   
   if selected_text and selected_text ~= "" then
     -- Wrap selected text in heredoc and pass to command
-    -- Using Python-style heredoc: text = '''\n...\n'''
     local escaped_text = escape_heredoc(selected_text)
     local heredoc_cmd = string.format(
       "python3 << 'PYEOF'\ntext = '''\n%s\n'''\nprint(text)\nPYEOF\n",
