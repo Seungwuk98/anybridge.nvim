@@ -102,6 +102,7 @@ require("anybridge").setup({
 - **Executable check**: Shows installation prompt if `anybridge` is not found in PATH (does not auto-install)
 - **Configurable**: Customize window size, border style, and command
 - **Visual mode support**: Pass selected text to the terminal via stdin
+- **Single window**: `:ABOpen` always reuses the existing terminal session
 
 ### Visual Mode
 
@@ -129,26 +130,27 @@ The selected text is sent directly to the terminal's stdin, allowing commands li
 
 ### ABOpen Behavior
 
-| Terminal State | Selected Text | Result |
-|----------------|---------------|--------|
-| Running | Yes | Send text to existing terminal |
-| Running | No | Do nothing |
-| Not running | Any | Open new terminal (text ignored) |
+| Window State | Terminal State | Selected Text | Result |
+|--------------|----------------|---------------|--------|
+| Open | Running | Yes | Switch to window, send text |
+| Open | Running | No | Switch to window |
+| Open | Exited | Any | Switch to window |
+| Closed | Any | Any | Open window (reuse or new) |
 
 ### ABToggle Behavior
 
 | Window State | Terminal State | Selected Text | Result |
 |--------------|----------------|---------------|--------|
 | Open | Any | Any | Close window |
-| Closed | Running | Yes | Send text, then open window |
+| Closed | Running | Yes | Send text, open window |
 | Closed | Running | No | Open window |
-| Closed | Not running | Any | Open new terminal |
+| Closed | Exited | Any | Open window |
 
 ## Command Comparison
 
 | Command | Window | Terminal |
 |---------|--------|----------|
-| `:ABOpen` | Opens | Starts new session |
+| `:ABOpen` | Opens/Shows | Starts new or reuses |
 | `:ABToggle` | Hides/Shows | Keeps running |
 | `:ABClose` | Closes | Keeps running (background) |
 | `:ABKill` | Closes | Terminates |
