@@ -166,10 +166,9 @@ end
 function M.open_float_with_buffer(buf)
   local config = M.config or options.get({})
   
-  -- Get current window dimensions
-  local current_win = vim.api.nvim_get_current_win()
-  local win_width = vim.api.nvim_win_get_width(current_win)
-  local win_height = vim.api.nvim_win_get_height(current_win)
+  -- Get editor dimensions (not current window)
+  local win_width = vim.api.nvim_get_option("columns")
+  local win_height = vim.api.nvim_get_option("lines")
   
   -- Calculate float window dimensions using config
   local width = math.floor(win_width * config.width_pct)
@@ -179,10 +178,9 @@ function M.open_float_with_buffer(buf)
   local row = math.floor((win_height - height) / 2)
   local col = math.floor((win_width - width) / 2)
   
-  -- Create floating window with existing buffer
+  -- Create floating window with existing buffer (relative to editor)
   local win_opts = {
-    relative = "win",
-    win = current_win,
+    relative = "editor",
     width = width,
     height = height,
     row = row,
@@ -206,10 +204,9 @@ function M.open_float(selected_text)
     return
   end
   
-  -- Get current window dimensions
-  local current_win = vim.api.nvim_get_current_win()
-  local win_width = vim.api.nvim_win_get_width(current_win)
-  local win_height = vim.api.nvim_win_get_height(current_win)
+  -- Get editor dimensions (not current window)
+  local win_width = vim.api.nvim_get_option("columns")
+  local win_height = vim.api.nvim_get_option("lines")
   
   -- Calculate float window dimensions using config
   local width = math.floor(win_width * config.width_pct)
@@ -222,10 +219,9 @@ function M.open_float(selected_text)
   -- Create terminal buffer
   local buf = vim.api.nvim_create_buf(true, false)  -- terminal buffer
   
-  -- Create floating window with terminal buffer
+  -- Create floating window with terminal buffer (relative to editor)
   local win_opts = {
-    relative = "win",
-    win = current_win,
+    relative = "editor",
     width = width,
     height = height,
     row = row,
