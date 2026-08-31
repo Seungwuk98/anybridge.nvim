@@ -109,6 +109,10 @@ function M.send_terminal_text(text)
   local chan = M.get_float_chan()
   if chan and chan > 0 then
     vim.api.nvim_chan_send(chan, M.prepare_terminal_text(text))
+    if float_win and vim.api.nvim_win_is_valid(float_win) then
+      vim.api.nvim_set_current_win(float_win)
+      vim.cmd("startinsert")
+    end
   end
 end
 
