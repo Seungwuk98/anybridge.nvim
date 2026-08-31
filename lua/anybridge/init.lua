@@ -51,16 +51,20 @@ function M.setup(opts)
     if config.keymaps.toggle then
       vim.keymap.set("n", config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
       vim.keymap.set("v", config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
+      vim.keymap.set("i", config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
     end
     if config.keymaps.open then
       vim.keymap.set("n", config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
       vim.keymap.set("v", config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
+      vim.keymap.set("i", config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
     end
     if config.keymaps.close then
       vim.keymap.set("n", config.keymaps.close, "<cmd>ABClose<cr>", { desc = "Close AnyBridge" })
+      vim.keymap.set("i", config.keymaps.close, "<cmd>ABClose<cr>", { desc = "Close AnyBridge" })
     end
     if config.keymaps.kill then
       vim.keymap.set("n", config.keymaps.kill, "<cmd>ABKill<cr>", { desc = "Kill AnyBridge" })
+      vim.keymap.set("i", config.keymaps.kill, "<cmd>ABKill<cr>", { desc = "Kill AnyBridge" })
     end
   end
   
