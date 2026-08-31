@@ -85,8 +85,8 @@ function M.get_float_buf()
 end
 
 function M.close_float()
-  local win = M.get_float_window()
-  if win then
+  if float_win and vim.api.nvim_win_is_valid(float_win) then
+    local win = float_win
     local current_win = vim.api.nvim_get_current_win()
     if win == current_win then
       for _, w in ipairs(vim.api.nvim_list_wins()) do
@@ -97,15 +97,15 @@ function M.close_float()
       end
     end
     vim.api.nvim_win_close(win, true)
-    -- Clear window state but keep buffer (terminal keeps running)
-    float_win = nil
   end
+  -- Clear window state but keep buffer (terminal keeps running)
+  float_win = nil
 end
 
 --- Kill the terminal and close the window
 function M.kill_float()
-  local win = M.get_float_window()
-  local buf = M.get_float_buf()
+  local win = float_win
+  local buf = float_buf
   
   if win and vim.api.nvim_win_is_valid(win) then
     local current_win = vim.api.nvim_get_current_win()
@@ -169,22 +169,19 @@ function M.restart_float()
 end
 
 function M.toggle_float(selected_text)
-  local win = M.get_float_window()
-  
-  if win and vim.api.nvim_win_is_valid(win) then
+  if float_win and vim.api.nvim_win_is_valid(float_win) then
     -- Window exists, close it (terminal keeps running)
     M.close_float()
   else
     -- No window, check if we have an existing buffer
-    local buf = M.get_float_buf()
-    if buf and vim.api.nvim_buf_is_valid(buf) then
+    if float_buf and vim.api.nvim_buf_is_valid(float_buf) then
       -- Check if terminal is running
-      if M.is_terminal_running(buf) then
+      if M.is_terminal_running(float_buf) then
         -- Terminal is running
         if selected_text and selected_text ~= "" then
           -- Send text to existing terminal
           vim.schedule(function()
-            local chan_id = buf
+            local chan_id = float_buf
             if chan_id and chan_id > 0 then
               vim.api.nvim_chan_send(chan_id, selected_text)
             end
@@ -192,7 +189,7 @@ function M.toggle_float(selected_text)
         end
       end
       -- Open window with existing buffer (regardless of terminal state)
-      M.open_float_with_buffer(buf)
+      M.open_float_with_buffer(float_buf)
     else
       -- No existing buffer, create new one
       M.open_float()
@@ -263,19 +260,17 @@ function M.open_float(selected_text)
   local config = M.config or options.get({})
   
   -- Check if window is already open
-  local existing_win = M.get_float_window()
-  if existing_win and vim.api.nvim_win_is_valid(existing_win) then
+  if float_win and vim.api.nvim_win_is_valid(float_win) then
     -- Window exists, switch to it
-    vim.api.nvim_set_current_win(existing_win)
+    vim.api.nvim_set_current_win(float_win)
     
     -- Check if terminal is running
-    local existing_buf = M.get_float_buf()
-    if existing_buf and vim.api.nvim_buf_is_valid(existing_buf) and M.is_terminal_running(existing_buf) then
+    if float_buf and vim.api.nvim_buf_is_valid(float_buf) and M.is_terminal_running(float_buf) then
       -- Terminal is running
       if selected_text and selected_text ~= "" then
         -- Send text to existing terminal
         vim.schedule(function()
-          local chan_id = existing_buf
+          local chan_id = float_buf
           if chan_id and chan_id > 0 then
             vim.api.nvim_chan_send(chan_id, selected_text)
           end
@@ -287,10 +282,9 @@ function M.open_float(selected_text)
   end
   
   -- Check if we have an existing buffer (terminal may have exited)
-  local existing_buf = M.get_float_buf()
-  if existing_buf and vim.api.nvim_buf_is_valid(existing_buf) then
+  if float_buf and vim.api.nvim_buf_is_valid(float_buf) then
     -- Terminal exited, open window with existing buffer
-    M.open_float_with_buffer(existing_buf)
+    M.open_float_with_buffer(float_buf)
     return
   end
   
