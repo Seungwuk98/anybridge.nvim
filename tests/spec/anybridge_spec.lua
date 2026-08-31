@@ -149,7 +149,30 @@ describe("anybridge", function()
       local buf3 = vim.api.nvim_win_get_buf(win)
       eq(buf2, buf3)
     end)
-    
+
+    it("should send selected text when reopening a running terminal with open_float", function()
+      local anybridge = require("anybridge")
+      anybridge.setup({ command = "sh" })
+
+      anybridge.open_float()
+      anybridge.close_float()
+
+      local sent_text
+      local original_send_terminal_text = anybridge.send_terminal_text
+      anybridge.send_terminal_text = function(text)
+        sent_text = text
+      end
+
+      local selected_text = "local value = 1\nprint(value)"
+      anybridge.open_float(selected_text)
+      vim.wait(100, function()
+        return sent_text ~= nil
+      end)
+
+      anybridge.send_terminal_text = original_send_terminal_text
+      eq(selected_text, sent_text)
+    end)
+
     it("should kill terminal and close window with kill_float", function()
       local anybridge = require("anybridge")
       anybridge.setup({ command = "echo test" })

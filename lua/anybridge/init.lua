@@ -307,8 +307,13 @@ function M.open_float(selected_text)
   
   -- Check if we have an existing buffer (terminal may have exited)
   if float_buf and vim.api.nvim_buf_is_valid(float_buf) then
-    -- Terminal exited, open window with existing buffer
+    local terminal_running = M.is_terminal_running(float_buf)
     M.open_float_with_buffer(float_buf)
+    if terminal_running and selected_text and selected_text ~= "" then
+      vim.schedule(function()
+        M.send_terminal_text(selected_text)
+      end)
+    end
     return
   end
   
