@@ -8,7 +8,7 @@ Using [lazy.nvim](https://github.com/folke/lazy.nvim):
 
 ```lua
 {
-  "user/anybridge.nvim",
+  "seungwuk98/anybridge.nvim",
   lazy = false,
   priority = 1000,
   opts = {
