@@ -33,6 +33,22 @@ describe("anybridge", function()
     end)
   end)
 
+  describe("terminal state", function()
+    it("should detect a running terminal job", function()
+      local anybridge = require("anybridge")
+      local buf = vim.api.nvim_create_buf(true, false)
+      local previous_buf = vim.api.nvim_get_current_buf()
+      vim.api.nvim_set_current_buf(buf)
+      local job_id = vim.fn.termopen("sh")
+
+      assert.is_true(anybridge.is_terminal_running(buf))
+
+      vim.fn.jobstop(job_id)
+      vim.api.nvim_set_current_buf(previous_buf)
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+  end)
+
   describe("float window management", function()
     local test_buf
     local test_win

@@ -175,8 +175,8 @@ function M.is_terminal_running(buf)
   end
   
   -- Check if there's a running job in this buffer
-  local job_id = vim.fn.getbufvar(buf, "job_id")
-  if job_id and job_id ~= 0 and job_id ~= nil then
+  local job_id = vim.fn.getbufvar(buf, "terminal_job_id")
+  if type(job_id) == "number" and job_id > 0 then
     -- Check if job is still running using jobwait with 0 timeout
     local ok, result = pcall(vim.fn.jobwait, {job_id}, 0)
     if ok and result and result[1] == -1 then
@@ -186,7 +186,7 @@ function M.is_terminal_running(buf)
     return false
   end
   
-  -- No job_id means terminal hasn't started yet or is not running
+  -- No terminal_job_id means terminal hasn't started yet or is not running
   return false
 end
 
