@@ -94,6 +94,24 @@ function M.get_float_chan()
   return nil
 end
 
+--- Format selected text for delivery to an interactive terminal.
+--- Multiline input must be sent as a bracketed paste so embedded newlines are
+--- treated as one paste operation rather than individual Enter key presses.
+function M.prepare_terminal_text(text)
+  if text:find("\n", 1, true) then
+    return "\27[200~" .. text .. "\27[201~"
+  end
+  return text
+end
+
+--- Send selected text to the running terminal.
+function M.send_terminal_text(text)
+  local chan = M.get_float_chan()
+  if chan and chan > 0 then
+    vim.api.nvim_chan_send(chan, M.prepare_terminal_text(text))
+  end
+end
+
 function M.close_float()
   if float_win and vim.api.nvim_win_is_valid(float_win) then
     local win = float_win
@@ -191,10 +209,7 @@ function M.toggle_float(selected_text)
         if selected_text and selected_text ~= "" then
           -- Send text to existing terminal
           vim.schedule(function()
-            local chan = M.get_float_chan()
-            if chan and chan > 0 then
-              vim.api.nvim_chan_send(chan, selected_text)
-            end
+            M.send_terminal_text(selected_text)
           end)
         end
       end
@@ -278,10 +293,7 @@ function M.open_float(selected_text)
     if float_buf and vim.api.nvim_buf_is_valid(float_buf) and M.is_terminal_running(float_buf) then
       if selected_text and selected_text ~= "" then
         vim.schedule(function()
-          local chan = M.get_float_chan()
-          if chan and chan > 0 then
-            vim.api.nvim_chan_send(chan, selected_text)
-          end
+          M.send_terminal_text(selected_text)
         end)
       end
     end

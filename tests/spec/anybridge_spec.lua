@@ -20,6 +20,19 @@ describe("anybridge", function()
     end)
   end)
 
+  describe("terminal text formatting", function()
+    it("should leave single-line text unchanged", function()
+      local anybridge = require("anybridge")
+      eq("print('hello')", anybridge.prepare_terminal_text("print('hello')"))
+    end)
+
+    it("should wrap multiline text as a bracketed paste", function()
+      local anybridge = require("anybridge")
+      local text = "local value = 1\nprint(value)"
+      eq("\27[200~" .. text .. "\27[201~", anybridge.prepare_terminal_text(text))
+    end)
+  end)
+
   describe("float window management", function()
     local test_buf
     local test_win
