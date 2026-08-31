@@ -24,9 +24,18 @@ function M.setup(opts)
     M.open_float(selected_text)
   end, { nargs = 0, range = '%' })
   
-  vim.api.nvim_create_user_command("ABToggle", function()
-    M.toggle_float()
-  end, { nargs = 0 })
+  vim.api.nvim_create_user_command("ABToggle", function(opts)
+    local selected_text = nil
+    if opts.range > 0 then
+      -- Line range selected
+      local lines = vim.api.nvim_buf_get_lines(0, opts.line1 - 1, opts.line2, false)
+      selected_text = table.concat(lines, "\n")
+    elseif vim.fn.mode() == "v" or vim.fn.mode() == "V" or vim.fn.mode() == "" then
+      -- Visual mode selected
+      selected_text = vim.fn.getreg(0)
+    end
+    M.toggle_float(selected_text)
+  end, { nargs = 0, range = '%' })
   
   vim.api.nvim_create_user_command("ABClose", function()
     M.close_float()
@@ -36,13 +45,15 @@ function M.setup(opts)
     M.kill_float()
   end, { nargs = 0 })
   
-  -- Set up keymaps
+  -- Set up keymaps (normal and visual modes)
   if config.keymaps then
     if config.keymaps.toggle then
       vim.keymap.set("n", config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
+      vim.keymap.set("v", config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
     end
     if config.keymaps.open then
       vim.keymap.set("n", config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
+      vim.keymap.set("v", config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
     end
     if config.keymaps.close then
       vim.keymap.set("n", config.keymaps.close, "<cmd>ABClose<cr>", { desc = "Close AnyBridge" })
@@ -157,7 +168,7 @@ function M.restart_float()
   M.open_float()
 end
 
-function M.toggle_float()
+function M.toggle_float(selected_text)
   local win = M.get_float_window()
   
   if win and vim.api.nvim_win_is_valid(win) then
@@ -168,10 +179,10 @@ function M.toggle_float()
     local buf = M.get_float_buf()
     if buf and vim.api.nvim_buf_is_valid(buf) then
       -- Reuse existing terminal buffer
-      M.open_float_with_buffer(buf)
+      M.open_float_with_buffer(buf, selected_text)
     else
       -- No existing buffer, create new one
-      M.open_float()
+      M.open_float(selected_text)
     end
   end
 end
@@ -202,13 +213,8 @@ function M.show_install_prompt(config)
   vim.api.nvim_echo(msg, true, {})
 end
 
---- Escape text for heredoc
-local function escape_heredoc(text)
-  return text
-end
-
 --- Helper function to create window with existing buffer
-function M.open_float_with_buffer(buf)
+function M.open_float_with_buffer(buf, selected_text)
   local config = M.config or options.get({})
   
   -- Get editor dimensions (not current window)
@@ -238,6 +244,16 @@ function M.open_float_with_buffer(buf)
   
   -- Store window ID in module state (buffer already exists)
   float_win = win
+  
+  -- Send selected text to stdin if provided
+  if selected_text and selected_text ~= "" then
+    vim.schedule(function()
+      local chan_id = vim.fn.buflisted(buf) and buf or nil
+      if chan_id and chan_id > 0 then
+        vim.api.nvim_chan_send(chan_id, selected_text)
+      end
+    end)
+  end
 end
 
 function M.open_float(selected_text)
@@ -306,13 +322,14 @@ function M.open_float(selected_text)
   end
   
   if selected_text and selected_text ~= "" then
-    -- Wrap selected text in heredoc and pass to command
-    local escaped_text = escape_heredoc(selected_text)
-    local heredoc_cmd = string.format(
-      "python3 << 'PYEOF'\ntext = '''\n%s\n'''\nprint(text)\nPYEOF\n",
-      escaped_text
-    )
-    vim.fn.termopen(heredoc_cmd, { on_exit = on_exit })
+    -- Start terminal and send text to stdin
+    local chan_id = vim.fn.termopen(cmd, { on_exit = on_exit })
+    -- Wait a bit for terminal to be ready
+    vim.schedule(function()
+      if chan_id and chan_id > 0 then
+        vim.api.nvim_chan_send(chan_id, selected_text)
+      end
+    end)
   else
     vim.fn.termopen(cmd, { on_exit = on_exit })
   end

@@ -64,10 +64,10 @@ require("anybridge").setup({
   command = "anybridge",     -- Command to run
   install_command = "curl -fsSL https://code.anybridge.ai/install.sh | bash",
   keymaps = {
-    toggle = "<leader>ab",   -- Toggle AnyBridge
-    open = "<leader>aO",     -- Open new session
-    close = "<leader>ac",    -- Close window (keep terminal)
-    kill = "<leader>ax",     -- Kill terminal and close
+    toggle = "<leader>ab",   -- Toggle AnyBridge (normal + visual)
+    open = "<leader>aO",     -- Open new session (normal + visual)
+    close = "<leader>ac",    -- Close window (normal only)
+    kill = "<leader>ax",     -- Kill terminal and close (normal only)
   },
 })
 ```
@@ -97,31 +97,34 @@ require("anybridge").setup({
 - **Kill behavior**: `:ABKill` terminates the terminal and closes the window
 - **Auto-restart**: After `:ABKill`, next `:ABOpen` starts a fresh session
 - **Configurable keymaps**: Set custom keybindings in setup (disabled by default)
+  - `toggle` and `open` work in both normal and visual modes
+  - `close` and `kill` work in normal mode only
 - **Executable check**: Shows installation prompt if `anybridge` is not found in PATH (does not auto-install)
 - **Configurable**: Customize window size, border style, and command
-- **Visual mode support**: Pass selected text to the terminal via heredoc
+- **Visual mode support**: Pass selected text to the terminal via stdin
 
 ### Visual Mode
 
-Select text in visual mode and run `:ABOpen` to pass the selected content to the terminal wrapped in a heredoc:
+Select text in visual mode and run `:ABOpen` or `:ABToggle` to send the selected content to the terminal's stdin:
 
 ```vim
 " Select text visually and run:
 :'<,'>ABOpen
+:'<,'>ABToggle
 
 " Or select a range:
 :10,20ABOpen
+:10,20ABToggle
+
+" Or use keymap (if configured):
+vmap <leader>ab  # visual mode + keymap sends selection to terminal
 ```
 
-The selected text is passed to the terminal using Python heredoc syntax:
+The selected text is sent directly to the terminal's stdin, allowing commands like `grep`, `awk`, `python`, etc. to process it:
 
-```python
-python3 << 'PYEOF'
-text = '''
-selected text content
-'''
-print(text)
-PYEOF
+```vim
+" Example: pipe selected text to grep
+:,'<,'>ABToggle  # text is sent to terminal stdin
 ```
 
 ## Command Comparison
