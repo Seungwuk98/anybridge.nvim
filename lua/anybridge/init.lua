@@ -3,9 +3,10 @@ local M = {}
 
 local options = require("anybridge.options")
 
--- Module state: store float window ID and buffer
+-- Module state: store float window ID, buffer, and channel ID
 local float_win = nil
 local float_buf = nil
+local float_chan = nil
 
 function M.setup(opts)
   local config = options.get(opts)
@@ -84,6 +85,15 @@ function M.get_float_buf()
   return nil
 end
 
+--- Get the float channel if it exists and is valid
+function M.get_float_chan()
+  if float_chan and float_chan > 0 then
+    return float_chan
+  end
+  float_chan = nil
+  return nil
+end
+
 function M.close_float()
   if float_win and vim.api.nvim_win_is_valid(float_win) then
     local win = float_win
@@ -100,7 +110,6 @@ function M.close_float()
     end
     vim.api.nvim_win_close(win, true)
   else
-    -- Window not valid, just clear state
     float_win = nil
   end
 end
@@ -109,8 +118,10 @@ end
 function M.kill_float()
   local win = float_win
   local buf = float_buf
+  local chan = float_chan
   float_win = nil
   float_buf = nil
+  float_chan = nil
   
   if win and vim.api.nvim_win_is_valid(win) then
     local current_win = vim.api.nvim_get_current_win()
@@ -126,12 +137,10 @@ function M.kill_float()
   end
   
   -- Kill the terminal job if it exists
+  if chan and chan > 0 then
+    pcall(vim.fn.chanclose, chan)
+  end
   if buf and vim.api.nvim_buf_is_valid(buf) then
-    local job_id = vim.fn.getbufvar(buf, "job_id")
-    if job_id and job_id ~= 0 then
-      pcall(vim.fn.jobstop, job_id)
-    end
-    -- Delete the buffer
     pcall(vim.api.nvim_buf_delete, buf, { force = true })
   end
 end
@@ -182,9 +191,9 @@ function M.toggle_float(selected_text)
         if selected_text and selected_text ~= "" then
           -- Send text to existing terminal
           vim.schedule(function()
-            local chan_id = float_buf
-            if chan_id and chan_id > 0 then
-              vim.api.nvim_chan_send(chan_id, selected_text)
+            local chan = M.get_float_chan()
+            if chan and chan > 0 then
+              vim.api.nvim_chan_send(chan, selected_text)
             end
           end)
         end
@@ -269,9 +278,9 @@ function M.open_float(selected_text)
     if float_buf and vim.api.nvim_buf_is_valid(float_buf) and M.is_terminal_running(float_buf) then
       if selected_text and selected_text ~= "" then
         vim.schedule(function()
-          local chan_id = float_buf
-          if chan_id and chan_id > 0 then
-            vim.api.nvim_chan_send(chan_id, selected_text)
+          local chan = M.get_float_chan()
+          if chan and chan > 0 then
+            vim.api.nvim_chan_send(chan, selected_text)
           end
         end)
       end
@@ -349,7 +358,8 @@ function M.open_float(selected_text)
     end)
   end
   
-  vim.fn.termopen(cmd, { on_exit = on_exit })
+  -- Store channel ID from termopen
+  float_chan = vim.fn.termopen(cmd, { on_exit = on_exit })
 end
 
 return M
