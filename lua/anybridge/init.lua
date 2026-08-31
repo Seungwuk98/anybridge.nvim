@@ -178,11 +178,24 @@ function M.toggle_float(selected_text)
     -- No window, check if we have an existing buffer
     local buf = M.get_float_buf()
     if buf and vim.api.nvim_buf_is_valid(buf) then
-      -- Reuse existing terminal buffer
-      M.open_float_with_buffer(buf, selected_text)
+      -- Check if terminal is running
+      if M.is_terminal_running(buf) then
+        -- Terminal is running
+        if selected_text and selected_text ~= "" then
+          -- Send text to existing terminal
+          vim.schedule(function()
+            local chan_id = buf
+            if chan_id and chan_id > 0 then
+              vim.api.nvim_chan_send(chan_id, selected_text)
+            end
+          end)
+        end
+      end
+      -- Open window with existing buffer (regardless of terminal state)
+      M.open_float_with_buffer(buf)
     else
       -- No existing buffer, create new one
-      M.open_float(selected_text)
+      M.open_float()
     end
   end
 end
@@ -214,7 +227,7 @@ function M.show_install_prompt(config)
 end
 
 --- Helper function to create window with existing buffer
-function M.open_float_with_buffer(buf, selected_text)
+function M.open_float_with_buffer(buf)
   local config = M.config or options.get({})
   
   -- Get editor dimensions (not current window)
@@ -244,20 +257,34 @@ function M.open_float_with_buffer(buf, selected_text)
   
   -- Store window ID in module state (buffer already exists)
   float_win = win
-  
-  -- Send selected text to stdin if provided
-  if selected_text and selected_text ~= "" then
-    vim.schedule(function()
-      local chan_id = vim.fn.buflisted(buf) and buf or nil
-      if chan_id and chan_id > 0 then
-        vim.api.nvim_chan_send(chan_id, selected_text)
-      end
-    end)
-  end
 end
 
 function M.open_float(selected_text)
   local config = M.config or options.get({})
+  
+  -- Check if terminal is already running
+  local existing_buf = M.get_float_buf()
+  if existing_buf and vim.api.nvim_buf_is_valid(existing_buf) and M.is_terminal_running(existing_buf) then
+    -- Terminal is running
+    if selected_text and selected_text ~= "" then
+      -- Send text to existing terminal
+      vim.schedule(function()
+        local chan_id = existing_buf
+        if chan_id and chan_id > 0 then
+          vim.api.nvim_chan_send(chan_id, selected_text)
+        end
+      end)
+    else
+      -- No selected text, do nothing
+      return
+    end
+    -- Switch to existing window if not already there
+    local existing_win = M.get_float_window()
+    if existing_win and vim.api.nvim_win_is_valid(existing_win) then
+      vim.api.nvim_set_current_win(existing_win)
+    end
+    return
+  end
   
   -- Check if executable exists
   if not M.check_executable(config) then
@@ -301,7 +328,7 @@ function M.open_float(selected_text)
   vim.api.nvim_buf_set_option(buf, "filetype", "anybridge")
   vim.api.nvim_buf_set_option(buf, "bufhidden", "hide")
   
-  -- Start terminal with anybridge command
+  -- Start terminal with anybridge command (ignore selected_text for new terminal)
   local cmd = config.command
   
   -- Helper function to safely update buffer on exit
@@ -321,18 +348,7 @@ function M.open_float(selected_text)
     end)
   end
   
-  if selected_text and selected_text ~= "" then
-    -- Start terminal and send text to stdin
-    local chan_id = vim.fn.termopen(cmd, { on_exit = on_exit })
-    -- Wait a bit for terminal to be ready
-    vim.schedule(function()
-      if chan_id and chan_id > 0 then
-        vim.api.nvim_chan_send(chan_id, selected_text)
-      end
-    end)
-  else
-    vim.fn.termopen(cmd, { on_exit = on_exit })
-  end
+  vim.fn.termopen(cmd, { on_exit = on_exit })
 end
 
 return M

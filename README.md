@@ -117,15 +117,32 @@ Select text in visual mode and run `:ABOpen` or `:ABToggle` to send the selected
 :10,20ABToggle
 
 " Or use keymap (if configured):
-vmap <leader>ab  # visual mode + keymap sends selection to terminal
+vmap <leader>aO  # visual mode + keymap sends selection to terminal
 ```
 
 The selected text is sent directly to the terminal's stdin, allowing commands like `grep`, `awk`, `python`, etc. to process it:
 
 ```vim
 " Example: pipe selected text to grep
-:,'<,'>ABToggle  # text is sent to terminal stdin
+:,'<,'>ABOpen  # text is sent to terminal stdin
 ```
+
+### ABOpen Behavior
+
+| Terminal State | Selected Text | Result |
+|----------------|---------------|--------|
+| Running | Yes | Send text to existing terminal |
+| Running | No | Do nothing |
+| Not running | Any | Open new terminal (text ignored) |
+
+### ABToggle Behavior
+
+| Window State | Terminal State | Selected Text | Result |
+|--------------|----------------|---------------|--------|
+| Open | Any | Any | Close window |
+| Closed | Running | Yes | Send text, then open window |
+| Closed | Running | No | Open window |
+| Closed | Not running | Any | Open new terminal |
 
 ## Command Comparison
 
