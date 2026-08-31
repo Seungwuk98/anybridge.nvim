@@ -69,6 +69,30 @@ require("anybridge").setup({
 - **Auto-restart**: `:ABToggle` automatically restarts the terminal if it has exited
 - **Executable check**: Shows installation prompt if `anybridge` is not found in PATH (does not auto-install)
 - **Configurable**: Customize window size, border style, and command
+- **Visual mode support**: Pass selected text to the terminal via heredoc
+
+### Visual Mode
+
+Select text in visual mode and run `:ABOpen` to pass the selected content to the terminal wrapped in a heredoc:
+
+```vim
+" Select text visually and run:
+:'<,'>ABOpen
+
+" Or select a range:
+:10,20ABOpen
+```
+
+The selected text is passed to the terminal using Python heredoc syntax:
+
+```python
+python3 << 'PYEOF'
+text = '''
+selected text content
+'''
+print(text)
+PYEOF
+```
 
 ## Requirements
 

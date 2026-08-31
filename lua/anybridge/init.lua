@@ -3,13 +3,26 @@ local M = {}
 
 local options = require("anybridge.options")
 
+-- Module state: store float window ID
+local float_win = nil
+local float_buf = nil
+
 function M.setup(opts)
   local config = options.get(opts)
   
   -- Create commands
-  vim.api.nvim_create_user_command("ABOpen", function()
-    M.open_float()
-  end, { nargs = 0 })
+  vim.api.nvim_create_user_command("ABOpen", function(opts)
+    local selected_text = nil
+    if opts.range > 0 then
+      -- Line range selected
+      local lines = vim.api.nvim_buf_get_lines(0, opts.line1 - 1, opts.line2, false)
+      selected_text = table.concat(lines, "\n")
+    elseif vim.fn.mode() == "v" or vim.fn.mode() == "V" or vim.fn.mode() == "" then
+      -- Visual mode selected
+      selected_text = vim.fn.getreg(0)
+    end
+    M.open_float(selected_text)
+  end, { nargs = 0, range = '%' })
   
   vim.api.nvim_create_user_command("ABToggle", function()
     M.toggle_float()
@@ -23,29 +36,27 @@ function M.setup(opts)
   M.config = config
 end
 
+--- Get the float window if it exists and is valid
 function M.get_float_window()
-  -- Find existing float window relative to win (our AB float windows)
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    local ok, config = pcall(vim.api.nvim_win_get_config, win)
-    if ok and config and config.relative == "win" then
-      return win
-    end
+  if float_win and vim.api.nvim_win_is_valid(float_win) then
+    return float_win
   end
+  float_win = nil
   return nil
 end
 
+--- Get the float buffer if it exists and is valid
 function M.get_float_buf()
-  -- Find existing float buffer
-  local win = M.get_float_window()
-  if win and vim.api.nvim_win_is_valid(win) then
-    return vim.api.nvim_win_get_buf(win)
+  if float_buf and vim.api.nvim_buf_is_valid(float_buf) then
+    return float_buf
   end
+  float_buf = nil
   return nil
 end
 
 function M.close_float()
   local win = M.get_float_window()
-  if win and vim.api.nvim_win_is_valid(win) then
+  if win then
     local current_win = vim.api.nvim_get_current_win()
     if win == current_win then
       for _, w in ipairs(vim.api.nvim_list_wins()) do
@@ -56,6 +67,9 @@ function M.close_float()
       end
     end
     vim.api.nvim_win_close(win, true)
+    -- Clear state
+    float_win = nil
+    float_buf = nil
   end
 end
 
@@ -92,6 +106,8 @@ function M.restart_float()
   if win and vim.api.nvim_win_is_valid(win) then
     vim.api.nvim_win_close(win, true)
   end
+  float_win = nil
+  float_buf = nil
   M.open_float()
 end
 
@@ -140,7 +156,14 @@ function M.show_install_prompt(config)
   vim.api.nvim_echo(msg, true, {})
 end
 
-function M.open_float()
+--- Escape text for heredoc
+local function escape_heredoc(text)
+  -- Text in heredoc with 'EOF' delimiter doesn't need escaping
+  -- But we should handle special characters carefully
+  return text
+end
+
+function M.open_float(selected_text)
   local config = M.config or options.get({})
   
   -- Check if executable exists
@@ -179,25 +202,53 @@ function M.open_float()
   
   local win = vim.api.nvim_open_win(buf, true, win_opts)
   
+  -- Store window/buffer IDs in module state
+  float_win = win
+  float_buf = buf
+  
   -- Set buffer options
   vim.api.nvim_buf_set_option(buf, "filetype", "anybridge")
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
   
   -- Start terminal with anybridge command
   local cmd = config.command
-  vim.fn.termopen(cmd, {
-    on_exit = function(job_id, exit_code)
-      -- Terminal exited, show message
-      vim.api.nvim_buf_set_option(buf, "modifiable", true)
-      vim.api.nvim_buf_set_lines(buf, 0, 0, false, {
-        "",
-        "AnyBridge exited with code: " .. exit_code,
-        "Press 'r' to restart or close the window.",
-      })
-      vim.api.nvim_buf_set_option(buf, "modified", false)
-      vim.api.nvim_buf_set_option(buf, "modifiable", false)
-    end,
-  })
+  
+  if selected_text and selected_text ~= "" then
+    -- Wrap selected text in heredoc and pass to command
+    -- Using Python-style heredoc: text = '''\n...\n'''
+    local escaped_text = escape_heredoc(selected_text)
+    local heredoc_cmd = string.format(
+      "python3 << 'PYEOF'\ntext = '''\n%s\n'''\nprint(text)\nPYEOF\n",
+      escaped_text
+    )
+    vim.fn.termopen(heredoc_cmd, {
+      on_exit = function(job_id, exit_code)
+        -- Terminal exited, show message
+        vim.api.nvim_buf_set_option(buf, "modifiable", true)
+        vim.api.nvim_buf_set_lines(buf, 0, 0, false, {
+          "",
+          "AnyBridge exited with code: " .. exit_code,
+          "Press 'r' to restart or close the window.",
+        })
+        vim.api.nvim_buf_set_option(buf, "modified", false)
+        vim.api.nvim_buf_set_option(buf, "modifiable", false)
+      end,
+    })
+  else
+    vim.fn.termopen(cmd, {
+      on_exit = function(job_id, exit_code)
+        -- Terminal exited, show message
+        vim.api.nvim_buf_set_option(buf, "modifiable", true)
+        vim.api.nvim_buf_set_lines(buf, 0, 0, false, {
+          "",
+          "AnyBridge exited with code: " .. exit_code,
+          "Press 'r' to restart or close the window.",
+        })
+        vim.api.nvim_buf_set_option(buf, "modified", false)
+        vim.api.nvim_buf_set_option(buf, "modifiable", false)
+      end,
+    })
+  end
 end
 
 return M
