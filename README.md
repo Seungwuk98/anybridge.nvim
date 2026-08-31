@@ -101,12 +101,14 @@ require("anybridge").setup({
   - `close` and `kill` work in normal mode only
 - **Executable check**: Shows installation prompt if `anybridge` is not found in PATH (does not auto-install)
 - **Configurable**: Customize window size, border style, and command
-- **Visual mode support**: Pass selected text to the terminal via stdin
+- **Visual mode support**: Send selected text to a running AnyBridge terminal
+- **Multiline code blocks**: Wrap multiline selections in Markdown code fences and send them as a bracketed paste
+- **Terminal input mode**: Focus the terminal and enter Terminal mode after sending selected text
 - **Single window**: `:ABOpen` always reuses the existing terminal session
 
 ### Visual Mode
 
-Select text in visual mode and run `:ABOpen` or `:ABToggle` to send the selected content to the terminal's stdin:
+Select text in visual mode and run `:ABOpen` or `:ABToggle` to send the selected content to an existing, running AnyBridge terminal:
 
 ```vim
 " Select text visually and run:
@@ -121,30 +123,47 @@ Select text in visual mode and run `:ABOpen` or `:ABToggle` to send the selected
 vmap <leader>aO  # visual mode + keymap sends selection to terminal
 ```
 
-The selected text is sent directly to the terminal's stdin, allowing commands like `grep`, `awk`, `python`, etc. to process it:
+Multiline selections are wrapped in Markdown code fences and delivered as one bracketed paste. A trailing newline is included after the closing fence:
+
+````text
+```
+<selected text>
+```
+````
+
+After sending, the floating terminal receives focus and enters Terminal mode so you can continue typing immediately.
+
+Selected text is intentionally not sent when the terminal is created for the first time. Open AnyBridge first, then send the selection with `:ABOpen`; or hide the running terminal and reopen it with `:ABToggle` while text is selected.
+
+`ABToggle` sends a selection only while restoring a hidden terminal. If the terminal window is already visible, `ABToggle` hides it without sending the selection.
+
+Single-line selections are sent unchanged:
 
 ```vim
-" Example: pipe selected text to grep
-:,'<,'>ABOpen  # text is sent to terminal stdin
+:'<,'>ABOpen
 ```
 
 ### ABOpen Behavior
 
 | Window State | Terminal State | Selected Text | Result |
 |--------------|----------------|---------------|--------|
-| Open | Running | Yes | Switch to window, send text |
+| Open | Running | Yes | Send text, focus terminal, enter Terminal mode |
 | Open | Running | No | Switch to window |
 | Open | Exited | Any | Switch to window |
-| Closed | Any | Any | Open window (reuse or new) |
+| Closed | Running | Yes | Open window, send text, enter Terminal mode |
+| Closed | Running | No | Open window |
+| Closed | Exited | Any | Open exited terminal buffer without sending |
+| Not created | — | Any | Start terminal without sending selected text |
 
 ### ABToggle Behavior
 
 | Window State | Terminal State | Selected Text | Result |
 |--------------|----------------|---------------|--------|
 | Open | Any | Any | Close window |
-| Closed | Running | Yes | Send text, open window |
+| Closed | Running | Yes | Open window, send text, enter Terminal mode |
 | Closed | Running | No | Open window |
 | Closed | Exited | Any | Open window |
+| Not created | — | Any | Start terminal without sending selected text |
 
 ## Command Comparison
 
