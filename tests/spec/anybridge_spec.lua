@@ -25,6 +25,10 @@ describe("anybridge", function()
     local test_win
     
     before_each(function()
+      -- Close previous anybridge window if exists (reset module state)
+      local anybridge = require("anybridge")
+      anybridge.close_float()
+      
       -- Close previous test window if exists
       if test_win and vim.api.nvim_win_is_valid(test_win) then
         local current_win = vim.api.nvim_get_current_win()

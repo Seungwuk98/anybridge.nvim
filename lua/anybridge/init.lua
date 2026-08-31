@@ -113,17 +113,10 @@ end
 
 function M.toggle_float()
   local win = M.get_float_window()
-  local buf = M.get_float_buf()
   
   if win and vim.api.nvim_win_is_valid(win) then
-    -- Window exists, check if terminal is running
-    if M.is_terminal_running(buf) then
-      -- Terminal is running, just switch to window
-      vim.api.nvim_set_current_win(win)
-    else
-      -- Terminal is not running, restart the float window
-      M.restart_float()
-    end
+    -- Window exists, close it
+    M.close_float()
   else
     -- No window, open new one
     M.open_float()
