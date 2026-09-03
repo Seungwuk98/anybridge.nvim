@@ -46,25 +46,19 @@ function M.setup(opts)
     M.kill_float()
   end, { nargs = 0 })
   
-  -- Set up keymaps (normal and visual modes)
+  -- Include terminal mode so mappings also work while typing in AnyBridge.
   if config.keymaps then
     if config.keymaps.toggle then
-      vim.keymap.set("n", config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
-      vim.keymap.set("v", config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
-      vim.keymap.set("i", config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
+      vim.keymap.set({ "n", "v", "i", "t" }, config.keymaps.toggle, "<cmd>ABToggle<cr>", { desc = "Toggle AnyBridge" })
     end
     if config.keymaps.open then
-      vim.keymap.set("n", config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
-      vim.keymap.set("v", config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
-      vim.keymap.set("i", config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
+      vim.keymap.set({ "n", "v", "i", "t" }, config.keymaps.open, "<cmd>ABOpen<cr>", { desc = "Open AnyBridge" })
     end
     if config.keymaps.close then
-      vim.keymap.set("n", config.keymaps.close, "<cmd>ABClose<cr>", { desc = "Close AnyBridge" })
-      vim.keymap.set("i", config.keymaps.close, "<cmd>ABClose<cr>", { desc = "Close AnyBridge" })
+      vim.keymap.set({ "n", "i", "t" }, config.keymaps.close, "<cmd>ABClose<cr>", { desc = "Close AnyBridge" })
     end
     if config.keymaps.kill then
-      vim.keymap.set("n", config.keymaps.kill, "<cmd>ABKill<cr>", { desc = "Kill AnyBridge" })
-      vim.keymap.set("i", config.keymaps.kill, "<cmd>ABKill<cr>", { desc = "Kill AnyBridge" })
+      vim.keymap.set({ "n", "i", "t" }, config.keymaps.kill, "<cmd>ABKill<cr>", { desc = "Kill AnyBridge" })
     end
   end
   

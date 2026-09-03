@@ -64,10 +64,10 @@ require("anybridge").setup({
   command = "anybridge",     -- Command to run
   install_command = "curl -fsSL https://code.anybridge.ai/install.sh | bash",
   keymaps = {
-    toggle = "<leader>ab",   -- Toggle AnyBridge (normal + visual)
-    open = "<leader>aO",     -- Open new session (normal + visual)
-    close = "<leader>ac",    -- Close window (normal only)
-    kill = "<leader>ax",     -- Kill terminal and close (normal only)
+    toggle = "<leader>ab",   -- Toggle AnyBridge (normal + visual + insert + terminal)
+    open = "<leader>aO",     -- Open new session (normal + visual + insert + terminal)
+    close = "<leader>ac",    -- Close window (normal + insert + terminal)
+    kill = "<leader>ax",     -- Kill terminal and close (normal + insert + terminal)
   },
 })
 ```
@@ -97,8 +97,8 @@ require("anybridge").setup({
 - **Kill behavior**: `:ABKill` terminates the terminal and closes the window
 - **Auto-restart**: After `:ABKill`, next `:ABOpen` starts a fresh session
 - **Configurable keymaps**: Set custom keybindings in setup (disabled by default)
-  - `toggle` and `open` work in both normal and visual modes
-  - `close` and `kill` work in normal mode only
+  - `toggle` and `open` work in normal, visual, insert, and terminal modes
+  - `close` and `kill` work in normal, insert, and terminal modes
 - **Executable check**: Shows installation prompt if `anybridge` is not found in PATH (does not auto-install)
 - **Configurable**: Customize window size, border style, and command
 - **Visual mode support**: Send selected text to a running AnyBridge terminal

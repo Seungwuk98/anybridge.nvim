@@ -18,6 +18,23 @@ describe("anybridge", function()
       anybridge.setup({ example_setting = false })
       eq(false, anybridge.config.example_setting)
     end)
+
+    it("should register configured keymaps in terminal mode", function()
+      local anybridge = require("anybridge")
+      anybridge.setup({
+        keymaps = {
+          toggle = "<F20>",
+          open = "<F21>",
+          close = "<F22>",
+          kill = "<F23>",
+        },
+      })
+
+      eq("<Cmd>ABToggle<CR>", vim.fn.maparg("<F20>", "t"))
+      eq("<Cmd>ABOpen<CR>", vim.fn.maparg("<F21>", "t"))
+      eq("<Cmd>ABClose<CR>", vim.fn.maparg("<F22>", "t"))
+      eq("<Cmd>ABKill<CR>", vim.fn.maparg("<F23>", "t"))
+    end)
   end)
 
   describe("terminal text formatting", function()
